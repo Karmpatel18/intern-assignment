@@ -1,16 +1,35 @@
 {
   "name": "service",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "AI-powered role-based assessment backend",
+  "main": "dist/main.js",
   "scripts": {
-    "dev": "nodemon --exec ts-node src/main.ts"
+    "dev": "nodemon --watch src --ext ts,js,json --exec ts-node src/main.ts",
+    "start": "node dist/main.js",
+    "build": "tsc -p tsconfig.json"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "bcrypt": "^6.0.0",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.8.1",
+    "vm2": "^3.9.19",
+    "zod": "^3.23.8"
+  },
   "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^4.17.23",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^24.3.0",
     "nodemon": "^3.1.10",
     "ts-node": "^10.9.2",
