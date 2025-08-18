@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { Assessment, Submission } from '../models/Assessment';
 import { requireAuth } from '../middleware/auth';
-import { evaluateOpenAnswer, richEvaluate } from '../services/ai';
+import { evaluateOpenAnswer, richEvaluate, generateInsights } from '../services/ai';
 import { VM } from 'vm2';
 
 const router = Router();
@@ -77,12 +77,8 @@ router.post('/:assessmentId', requireAuth, async (req: Request, res: Response) =
 	const overallScore = totalWeight ? +(totalScore / totalWeight).toFixed(2) : 0;
 	const perSkillBreakdown = Object.entries(perSkill).map(([skill, v]) => ({ skill, score: +(v.scoreSum / v.weightSum).toFixed(2) }));
 
-	const strengths = perSkillBreakdown.filter(s => s.score >= 0.75).map(s => s.skill);
-	const weaknesses = perSkillBreakdown.filter(s => s.score < 0.5).map(s => s.skill);
-	const recommendations = weaknesses.map(w => `Practice more advanced ${w} topics.`);
-	const suggestedResources = weaknesses.map(w => `Read official docs and take a tutorial on ${w}.`);
-
 	const rich = await richEvaluate(assessment.questions as any, answers, overallScore, perSkillBreakdown);
+	const insights = await generateInsights(assessment.role, assessment.techStack, overallScore, perSkillBreakdown);
 
 	const submission = await Submission.create({
 		userId,
@@ -90,10 +86,10 @@ router.post('/:assessmentId', requireAuth, async (req: Request, res: Response) =
 		answers,
 		overallScore,
 		perSkillBreakdown,
-		strengths,
-		weaknesses,
-		recommendations,
-		suggestedResources,
+		strengths: insights.strengths,
+		weaknesses: insights.weaknesses,
+		recommendations: insights.recommendations,
+		suggestedResources: insights.suggestedResources,
 		aiSummary: rich.summary,
 		questionFeedbacks: rich.perQuestionFeedback,
 		completedAt: new Date(),

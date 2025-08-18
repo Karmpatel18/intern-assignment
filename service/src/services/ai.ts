@@ -13,6 +13,13 @@ export interface BlueprintInput {
 	naturalLanguageNotes?: string | undefined;
 }
 
+export interface Insights {
+	strengths: string[];
+	weaknesses: string[];
+	recommendations: string[];
+	suggestedResources: string[];
+}
+
 export interface RichEvaluation {
 	summary: string;
 	perQuestionFeedback: { questionId: string; feedback: string }[];
@@ -243,4 +250,86 @@ Return STRICT JSON {summary: string, perQuestionFeedback: Array<{questionId:stri
 		if (parsed && typeof parsed.summary === 'string' && Array.isArray(parsed.perQuestionFeedback)) return parsed;
 	} catch {}
 	return { summary: `Overall score ${(overallScore*100).toFixed(0)}%. See per-skill for details.`, perQuestionFeedback: questions.map(q => ({ questionId: q.questionId, feedback: 'Consider improving depth and clarity.' })) };
+} 
+
+export async function generateInsights(role: string, techStack: string[], overallScore: number, perSkill: {skill: string; score: number}[]): Promise<Insights> {
+	// If AI available, ask for detailed, actionable insights with YouTube resources
+	if (genAI) {
+		const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+		const prompt = `Given role ${role}, tech stack ${techStack.join(', ')}, overall score ${(overallScore*100).toFixed(0)}%, and per-skill scores ${JSON.stringify(perSkill)}:
+Return STRICT JSON with detailed insights:
+{
+  "strengths": [3-6 concise bullets],
+  "weaknesses": [3-6 concise bullets],
+  "recommendations": [5-8 concrete, actionable next steps],
+  "suggestedResources": [6-10 items with YouTube course/tutorial URLs; include channel names]
+}`;
+		try {
+			const res = await model.generateContent(prompt);
+			const text = res.response.text();
+			const parsed = JSON.parse(text) as Insights;
+			if (parsed && Array.isArray(parsed.strengths) && Array.isArray(parsed.weaknesses) && Array.isArray(parsed.recommendations) && Array.isArray(parsed.suggestedResources)) {
+				return parsed;
+			}
+		} catch {}
+	}
+	// Heuristic fallback with curated YouTube links
+	const topSkills = perSkill.sort((a,b) => b.score - a.score);
+	const strengths = topSkills.filter(s => s.score >= 0.75).slice(0, 4).map(s => `${s.skill}: consistently strong (${Math.round(s.score*100)}%)`);
+	const weaknesses = topSkills.filter(s => s.score < 0.6).slice(0, 4).map(s => `${s.skill}: needs improvement (${Math.round(s.score*100)}%)`);
+	const recs: string[] = [
+		`Prioritize 2 weakest skills for the next 2 weeks with daily 45–60 min focused practice`,
+		`Rebuild a small project emphasizing ${weaknesses.map(w=>w.split(':')[0]).slice(0,2).join(' & ')} to solidify fundamentals`,
+		`Do spaced repetition for core concepts and error patterns you missed`,
+		`Add timed practice (Pomodoro 25/5) to simulate assessment pressure`,
+		`Write brief reflections after each session: what improved, what remains unclear`,
+	];
+	const ytByTopic: Record<string, string[]> = {
+		'react': [
+			'https://www.youtube.com/watch?v=SqcY0GlETPk', // freeCodeCamp React
+			'https://www.youtube.com/watch?v=VozPNrt-LfE', // Web Dev Simplified hooks
+			'https://www.youtube.com/watch?v=Rh3tobg7hEo', // Net Ninja React
+		],
+		'javascript': [
+			'https://www.youtube.com/watch?v=PkZNo7MFNFg', // freeCodeCamp JS
+			'https://www.youtube.com/watch?v=Mus_vwhTCq0', // Namaste JS
+			'https://www.youtube.com/watch?v=W6NZfCO5SIk', // Mosh JS
+		],
+		'node': [
+			'https://www.youtube.com/watch?v=Oe421EPjeBE', // freeCodeCamp Node
+			'https://www.youtube.com/watch?v=TlB_eWDSMt4', // Mosh Node
+		],
+		'express': [
+			'https://www.youtube.com/watch?v=G8uL0lFFoN0',
+		],
+		'mongodb': [
+			'https://www.youtube.com/watch?v=-56x56UppqQ', // Mongoose
+			'https://www.youtube.com/watch?v=ofme2o29ngU', // MongoDB basics
+		],
+		'css': [
+			'https://www.youtube.com/watch?v=1Rs2ND1ryYc', // CSS full course
+		],
+		'system design': [
+			'https://www.youtube.com/watch?v=UzLMhqg3_Wc', // System design intro
+			'https://www.youtube.com/watch?v=Hxy2GQC9qWk',
+		],
+		'data structures': [
+			'https://www.youtube.com/watch?v=8hly31xKli0',
+			'https://www.youtube.com/watch?v=BBpAmxU_NQo',
+		],
+	};
+	const topics = new Set<string>([
+		...techStack.map(s => s.toLowerCase()),
+		...perSkill.map(s => s.skill.toLowerCase()),
+	]);
+	const resources: string[] = [];
+	for (const key of Object.keys(ytByTopic)) {
+		const vids: string[] = ytByTopic[key] ?? [];
+		if (topics.has(key)) resources.push(...vids);
+		if (resources.length >= 8) break;
+	}
+	if (resources.length < 6) {
+		resources.push('https://www.youtube.com/@freecodecamp', 'https://www.youtube.com/@WebDevSimplified', 'https://www.youtube.com/@Fireship');
+	}
+	return { strengths: strengths.length ? strengths : ['Solid foundational understanding in core areas'], weaknesses: weaknesses.length ? weaknesses : ['Focus areas not detected; consider adding scenario/coding questions'], recommendations: recs, suggestedResources: Array.from(new Set(resources)).slice(0, 10) };
 } 
