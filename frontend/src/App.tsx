@@ -6,6 +6,7 @@ import TestPage from './pages/Test';
 import ResultsPage from './pages/Results';
 import HistoryPage from './pages/History';
 import { RegisterPage, LoginPage } from './pages/Auth';
+import { TiUser } from "react-icons/ti";
 
 function useAuth() {
 	const [token, setToken] = useState<string | null>(() => localStorage.getItem('token'));
@@ -51,15 +52,15 @@ function Landing() {
 				<div className="navbar">
 					<div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
 						<div style={{ width: 10, height: 10, borderRadius: 999, background: '#111827' }} />
-						<b>AI Assess</b>
+						<b className="text-lg">MindGauge</b>
 					</div>
-					<div className="nav-links">
+					<div className="nav-links ">
 						<a href="#features" className="muted">Features</a>
 						<a href="#how" className="muted">How it works</a>
 						<a href="#footer" className="muted">Contact</a>
 						{token ? (
 							<a href="/dashboard" aria-label="Profile">
-								<span className="avatar">U</span>
+								<span className="avatar"><TiUser size={22} /></span>
 							</a>
 						) : (
 							<>
@@ -72,14 +73,15 @@ function Landing() {
 			</div>
 
 			<div className="container" style={{ paddingTop: 32 }}>
-				<div className="card elevate" style={{ padding: 32, textAlign: 'left' }}>
-					<h1 className="fade-in" style={{ fontSize: 40, letterSpacing: -0.5 }}>Assess skills with clarity, not guesswork.</h1>
-					<p className="muted fade-in-delayed" style={{ maxWidth: 680 }}>Create role-based assessments powered by AI. Evaluate coding, problem-solving, and real-world scenarios with a clean, focused test experience.</p>
+				
+					<img src="/main.jpg" alt="AI Assess Logo" className="py-4 mb-8 rounded-3xl h-96 w-full object-cover object-top" />
+					<h1 className="fade-in font-semibold " style={{ fontSize: 40, letterSpacing: -0.5 }}>Assess skills with clarity, not guesswork.</h1>
+					<p className="muted fade-in-delayed " style={{ maxWidth: 680 }}>Create role-based assessments powered by AI. Evaluate coding, problem-solving, and real-world scenarios with a clean, focused test experience.</p>
 					<div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
 						<a href="/register"><button className="btn-primary">Create your first test</button></a>
 						<a href="/login"><button>View dashboard</button></a>
 					</div>
-				</div>
+				
 			</div>
 
 			<div id="features" className="container" style={{ marginTop: 24 }}>
@@ -119,7 +121,7 @@ function Landing() {
 
 			<div id="footer" className="container-wide footer">
 				<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-					<div className="muted">© {new Date().getFullYear()} AI Assess</div>
+					<div className="muted">© {new Date().getFullYear()} MindGauge</div>
 					<div className="nav-links">
 						<a href="#features" className="muted">Features</a>
 						<a href="#how" className="muted">How it works</a>
