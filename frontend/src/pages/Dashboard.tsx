@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarFooter, SidebarTrigger, SidebarInset, SidebarItem } from '../components/ui/sidebar';
 import { api, setToken } from '../lib/api';
+import { LayoutGrid, History as HistoryIcon, TrendingUp, PlusCircle, LogOut } from 'lucide-react';
+
+type ViewKey = 'overview' | 'history' | 'growth' | 'account';
 
 export default function DashboardPage() {
 	const [assessments, setAssessments] = useState<any[]>([]);
@@ -8,6 +13,9 @@ export default function DashboardPage() {
 	const [selectedId, setSelectedId] = useState<string | null>(null);
 	const [growthLoading, setGrowthLoading] = useState(false);
 	const [growthSubs, setGrowthSubs] = useState<any[]>([]);
+    const [view, setView] = useState<ViewKey>('overview');
+    const [historyLoading, setHistoryLoading] = useState(false);
+    const [historyMap, setHistoryMap] = useState<Record<string, any[]>>({});
 	useEffect(() => {
 		api.tests.list().then(d => { const arr = d.assessments || []; setAssessments(arr); if (arr[0]?._id) setSelectedId(arr[0]._id); }).catch(e => setError(e.message));
 	}, []);
@@ -19,76 +27,109 @@ export default function DashboardPage() {
 			setGrowthSubs(subs);
 		}).catch(() => setGrowthSubs([])).finally(() => setGrowthLoading(false));
 	}, [selectedId]);
-	const skillSeries = useMemo(() => {
-		const map: Record<string, number[]> = {};
-		for (const s of growthSubs) {
-			for (const ps of (s.perSkillBreakdown || [])) {
-				const k = ps.skill || 'General'; if (!map[k]) map[k] = []; map[k].push(Math.round((ps.score || 0) * 100));
-			}
-		}
-		return Object.entries(map).slice(0, 3);
-	}, [growthSubs]);
-	function linePath(values: number[], w: number, h: number): string { if (!values.length) return ''; const step = values.length > 1 ? (w - 8) / (values.length - 1) : 0; return values.map((v, i) => { const x = 4 + i * step; const y = h - 4 - (v / 100) * (h - 8); return `${i === 0 ? 'M' : 'L'}${x},${y}`; }).join(' '); }
+    useEffect(() => {
+        if (view !== 'history' || assessments.length === 0) return;
+        setHistoryLoading(true);
+        Promise.all(assessments.map(async (a) => {
+            try { const d = await api.submissions.listByAssessment(a._id); return [a._id, d.submissions || []] as const; }
+            catch { return [a._id, []] as const; }
+        })).then(entries => {
+            const map: Record<string, any[]> = {};
+            entries.forEach(([id, subs]) => { map[id] = subs; });
+            setHistoryMap(map);
+        }).finally(() => setHistoryLoading(false));
+    }, [view, assessments]);
+	
 	return (
-		<div className="container">
-			<div className="toolbar" style={{ marginBottom: 16 }}>
-				<h2>Dashboard</h2>
-				<div style={{ display: 'flex', gap: 8 }}>
-					<a href="/create"><button className="btn-primary">Generate Test</button></a>
-					<a href="/history"><button>Previous Tests</button></a>
-					<button onClick={() => { setToken(null); window.location.href = '/'; }}>Logout</button>
-				</div>
-			</div>
-			{error && <p style={{ color: 'red' }}>{error}</p>}
-			<div className="card">
-				<h3 style={{ marginBottom: 12 }}>Recent Assessments</h3>
-				<div className="grid-cards">
-					{assessments.map(a => (
-						<div key={a._id} className="card" style={{ padding: 16 }}>
-							<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-								<div style={{ fontWeight: 600 }}>{a.role}</div>
-								<span className="badge">{a.durationMinutes} min</span>
+		<div className="dash-root">
+			<SidebarProvider>
+				<div className="dash-layout p-3">
+					<Sidebar>
+						<SidebarHeader>
+							<b>Dashboard</b>
+							
+						</SidebarHeader>
+						<SidebarContent>
+							<div className="sidebar-items">
+								<SidebarItem icon={LayoutGrid} active={view === 'overview'} onClick={() => setView('overview')}>Overview</SidebarItem>
+								<SidebarItem icon={HistoryIcon} active={view === 'history'} onClick={() => setView('history')}>Previous Results</SidebarItem>
+								<Link className="sidebar-item" to="/create"><PlusCircle size={18} /><span className="sidebar-text">Generate Test</span></Link>
 							</div>
-							<div className="muted truncate" style={{ fontSize: 13, marginTop: 6 }}>{a.techStack?.join(', ')} · {a.experienceLevel}</div>
-							<div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 12 }}>
-								<button onClick={() => setConfirmId(a._id)}>Reassess</button>
+						</SidebarContent>
+						<SidebarFooter>
+							<a className="sidebar-item" onClick={() => { setToken(null); window.location.href = '/'; }}>
+								<LogOut size={18} />
+								<span className="sidebar-text">Logout</span>
+							</a>
+						</SidebarFooter>
+					</Sidebar>
+
+					<SidebarInset>
+						<div className="content-area">
+					{error && <p style={{ color: 'red' }}>{error}</p>}
+					{view === 'overview' && (
+						<div className="stack">
+							<div className="card">
+								<h3 style={{ marginBottom: 12 }}>Recent Assessments</h3>
+								<div className="grid-cards">
+									{assessments.map(a => (
+										<div key={a._id} className="card" style={{ padding: 16 }}>
+											<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+												<div style={{ fontWeight: 600 }}>{a.role}</div>
+												<span className="badge">{a.durationMinutes} min</span>
+											</div>
+											<div className="truncate" style={{ fontSize: 13, marginTop: 6 }}>{a.techStack?.join(', ')} · {a.experienceLevel}</div>
+											<div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 12 }}>
+												<button onClick={() => setConfirmId(a._id)}>Reassess</button>
+											</div>
+										</div>
+									))}
+								</div>
+								{assessments.length === 0 && (
+									<p className="muted">No assessments yet.</p>
+								)}
 							</div>
 						</div>
-					))}
-				</div>
-				{assessments.length === 0 && (
-					<p className="muted">No assessments yet.</p>
-				)}
-			</div>
+					)}
 
-			<div className="card" style={{ marginTop: 12 }}>
-				<div className="toolbar" style={{ marginBottom: 8 }}>
-					<h3>Skill growth</h3>
-					<div>
-						<select value={selectedId || ''} onChange={e => setSelectedId(e.target.value)}>
-							{assessments.map(a => <option key={a._id} value={a._id}>{a.role}</option>)}
-						</select>
-					</div>
-				</div>
-				{growthLoading && <p className="muted">Loading growth...</p>}
-				{!growthLoading && growthSubs.length === 0 && <p className="muted">No submissions yet for this assessment.</p>}
-				{!growthLoading && growthSubs.length > 0 && (
-					<div className="grid-cards">
-						{skillSeries.map(([skill, series]) => (
-							<div key={skill} className="card" style={{ padding: 12 }}>
-								<div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-									<span className="muted" style={{ fontSize: 13 }}>{skill}</span>
-									<span className="badge">{(series as number[])[(series as number[]).length - 1]}%</span>
-								</div>
-								<svg width="100%" height="64" viewBox="0 0 260 64" preserveAspectRatio="none">
-									<path d="M4,60 L256,60" stroke="#e5e7eb" strokeWidth="1" />
-									<path d={linePath(series as number[], 260, 64)} stroke="#111827" strokeWidth="2" fill="none" />
-								</svg>
+					{view === 'history' && (
+						<div className="card">
+							<h3>Previous Tests</h3>
+							{historyLoading && <p className="muted">Loading results...</p>}
+							<div className="stack">
+								{assessments.map(a => {
+									const subs = historyMap[a._id] || [];
+									return (
+										<div key={a._id} className="card" style={{ padding: 12 }}>
+											<div style={{ fontWeight: 600 }}>{a.role}</div>
+											<div className="truncate" style={{ fontSize: 12, marginBottom: 8 }}>{a.techStack?.join(', ')} · {a.experienceLevel}</div>
+											<div className="stack">
+												{subs.map((s: any) => (
+													<div key={s._id} className="option" style={{ justifyContent: 'space-between' }}>
+														<div style={{ fontSize: 13 }}>
+															<span><b>{Math.round((s.overallScore || 0) * 100) || '—'}%</b></span>
+															<span className="muted"> · {new Date(s.createdAt || s.created_at || 0).toLocaleString()}</span>
+														</div>
+														<div>
+															<Link to={`/results/${s._id}`}><button>View</button></Link>
+														</div>
+													</div>
+												))}
+												{subs.length === 0 && <p className="muted">No submissions yet.</p>}
+											</div>
+										</div>
+								);
+								})}
+								{assessments.length === 0 && <p className="muted">No tests found.</p>}
 							</div>
-						))}
-					</div>
-				)}
+						</div>
+					)}
+
+					
+				</div>
+			</SidebarInset>
 			</div>
+		</SidebarProvider>
 
 			{confirmId && (
 				<div className="card elevate" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -97,7 +138,7 @@ export default function DashboardPage() {
 						<p className="muted" style={{ marginTop: 6 }}>You can take the test again. Your new submission will appear in history.</p>
 						<div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 12 }}>
 							<button onClick={() => setConfirmId(null)}>Cancel</button>
-							<a href={`/test/${confirmId}`}><button className="btn-primary">Yes, start</button></a>
+							<Link to={`/test/${confirmId}`}><button className="btn-primary">Yes, start</button></Link>
 						</div>
 					</div>
 				</div>

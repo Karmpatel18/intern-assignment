@@ -40,28 +40,24 @@ export default function ResultsPage() {
 	return (
 		<div className="container">
 			<div className="toolbar" style={{ marginBottom: 16 }}>
-				<h2>Assessment Report</h2>
+				<h2 style={{ fontSize: 20 }}>Assessment Report</h2>
 				<a href="/dashboard"><button>Back to Dashboard</button></a>
 			</div>
 			<div className="card">
-				<p>Overall Score: <b>{Math.round((submission.overallScore || 0) * 100)}%</b></p>
-				<div style={{ display: 'flex', gap: 16, alignItems: 'center', marginTop: 8, flexWrap: 'wrap' }}>
-					{/* Radial score */}
-					<svg className="radial" viewBox="0 0 36 36" aria-label="Overall score">
-						<path d="M18 2 a 16 16 0 1 1 0 32 a 16 16 0 1 1 0 -32" fill="none" stroke="#e5e7eb" strokeWidth="4" />
-						<path d="M18 2 a 16 16 0 1 1 0 32 a 16 16 0 1 1 0 -32" fill="none" stroke="#111827" strokeWidth="4" strokeDasharray={`${Math.round((submission.overallScore || 0) * 100)}, 100`} strokeLinecap="round" />
-						<text x="18" y="20.5" textAnchor="middle">{Math.round((submission.overallScore || 0) * 100)}%</text>
-					</svg>
-
-					{/* Per-skill bars */}
+				<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+					<div>
+						<h3 style={{ margin: 0, fontSize: 16 }}>Overall Score</h3>
+						<div style={{ fontSize: 18, fontWeight: 700 }}>{Math.round((submission.overallScore || 0) * 100)}%</div>
+						<p className="muted" style={{ margin: 0, fontSize: 12 }}>AI-evaluated performance</p>
+					</div>
 					<div style={{ minWidth: 260, flex: 1 }}>
-						<h3 style={{ marginBottom: 8 }}>Per-skill breakdown</h3>
+						<h3 style={{ marginBottom: 8, fontSize: 16 }}>Skills</h3>
 						<div className="stack">
 							{(submission.perSkillBreakdown || []).map((s: any) => {
 								const pct = Math.round((s.score || 0) * 100);
 								return (
 									<div key={s.skill}>
-										<div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+										<div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
 											<span className="muted">{s.skill}</span>
 											<span>{pct}%</span>
 										</div>
@@ -75,15 +71,16 @@ export default function ResultsPage() {
 							)}
 						</div>
 					</div>
+				</div>
 				{submission.aiSummary && (
 					<div style={{ marginTop: 12 }}>
-						<h3>Summary</h3>
-						<div style={{ whiteSpace: 'pre-wrap' }}>{submission.aiSummary}</div>
+						<h3 style={{ fontSize: 16 }}>Summary</h3>
+						<div className="card" style={{ whiteSpace: 'pre-wrap', fontSize: 14 }}>{submission.aiSummary}</div>
 					</div>
 				)}
 				{submission.questionFeedbacks && submission.questionFeedbacks.length > 0 && (
 					<div style={{ marginTop: 12 }}>
-						<h3>Per-question feedback</h3>
+						<h3 style={{ fontSize: 16 }}>Per-question feedback</h3>
 						<ul>
 							{submission.questionFeedbacks.map((f: any) => (
 								<li key={f.questionId}><b>{f.questionId}</b>: {f.feedback}</li>
@@ -93,20 +90,20 @@ export default function ResultsPage() {
 				)}
 				<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 12 }}>
 					<div>
-						<h3>Strengths</h3>
-						<ul>{(submission.strengths || []).map((s: string) => <li key={s}>{s}</li>)}</ul>
+						<h3 style={{ fontSize: 16 }}>Strengths</h3>
+						<ul style={{ fontSize: 14 }}>{(submission.strengths || []).map((s: string) => <li key={s}>{s}</li>)}</ul>
 					</div>
 					<div>
-						<h3>Weaknesses</h3>
-						<ul>{(submission.weaknesses || []).map((s: string) => <li key={s}>{s}</li>)}</ul>
+						<h3 style={{ fontSize: 16 }}>Weaknesses</h3>
+						<ul style={{ fontSize: 14 }}>{(submission.weaknesses || []).map((s: string) => <li key={s}>{s}</li>)}</ul>
 					</div>
 				</div>
 				<div style={{ marginTop: 12 }}>
-					<h3>Recommendations</h3>
-					<ul>{(submission.recommendations || []).map((s: string, i: number) => <li key={i}>{s}</li>)}</ul>
+					<h3 style={{ fontSize: 16 }}>Recommendations</h3>
+					<ul style={{ fontSize: 14 }}>{(submission.recommendations || []).map((s: string, i: number) => <li key={i}>{s}</li>)}</ul>
 				</div>
 				<div style={{ marginTop: 12 }}>
-					<h3>Suggested Resources</h3>
+					<h3 style={{ fontSize: 16 }}>Suggested Resources</h3>
 					<div className="stack">
 						{(submission.suggestedResources || []).map((s: string, i: number) => {
 							const href = normalizeUrl(s);
@@ -126,7 +123,7 @@ export default function ResultsPage() {
 											<a href={href || undefined} target="_blank" rel="noreferrer" className="resource-thumb" />
 										)}
 										<div>
-											<a href={href || undefined} target="_blank" rel="noreferrer" style={{ fontWeight: 600 }}>
+											<a href={href || undefined} target="_blank" rel="noreferrer" style={{ fontWeight: 600, fontSize: 14 }}>
 												{href ? s : s}
 											</a>
 											<div className="resource-meta">
@@ -146,6 +143,6 @@ export default function ResultsPage() {
 				</div>
 			</div>
 		</div>
-		</div>
+		
 	);
 } 
