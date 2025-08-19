@@ -37,30 +37,46 @@ export default function CreateAssessmentPage() {
 	}
 
 	return (
-		<div style={{ padding: 24 }}>
-			<h2>Create Assessment</h2>
-			<form onSubmit={onSubmit}>
-				<label>Role<br /><input value={role} onChange={e => setRole(e.target.value)} required /></label>
-				<br />
-				<label>Tech Stack (comma separated)<br /><input value={techStack} onChange={e => setTechStack(e.target.value)} /></label>
-				<br />
-				<label>Experience Level<br /><input value={experienceLevel} onChange={e => setExperienceLevel(e.target.value)} required /></label>
-				<br />
-				<label>Preferred Question Types</label>
-				<div>
-					{['mcq', 'short', 'coding', 'scenario'].map(t => (
-						<label key={t} style={{ marginRight: 12 }}>
-							<input type="checkbox" checked={preferredTypes.includes(t)} onChange={() => toggleType(t)} /> {t}
-						</label>
-					))}
-				</div>
-				<label>Duration (minutes)<br /><input type="number" min={10} max={180} value={duration} onChange={e => setDuration(parseInt(e.target.value || '0', 10))} required /></label>
-				<br />
-				<label>Natural Language Notes<br /><textarea value={notes} onChange={e => setNotes(e.target.value)} rows={4} cols={60} /></label>
-				<br />
-				<button disabled={loading}>{loading ? 'Generating...' : 'Generate Assessment'}</button>
-			</form>
-			{error && <p style={{ color: 'red' }}>{error}</p>}
+		<div className="container">
+			<div className="card">
+				<h2 style={{ marginBottom: 16 }}>Create Assessment</h2>
+				<form className="stack" onSubmit={onSubmit}>
+					<div className="stack">
+						<label>Role</label>
+						<input value={role} onChange={e => setRole(e.target.value)} required />
+					</div>
+					<div className="stack">
+						<label>Tech Stack (comma separated)</label>
+						<input value={techStack} onChange={e => setTechStack(e.target.value)} />
+					</div>
+					<div className="stack">
+						<label>Experience Level</label>
+						<input value={experienceLevel} onChange={e => setExperienceLevel(e.target.value)} required />
+					</div>
+					<div>
+						<label>Preferred Question Types</label>
+						<div style={{ display: 'flex', gap: 12, marginTop: 6 }}>
+							{['mcq', 'short', 'coding', 'scenario'].map(t => (
+								<label key={t} className="option" style={{ padding: '6px 10px' }}>
+									<input type="checkbox" checked={preferredTypes.includes(t)} onChange={() => toggleType(t)} /> {t}
+								</label>
+							))}
+						</div>
+					</div>
+					<div className="stack">
+						<label>Duration (minutes)</label>
+						<input type="number" min={10} max={180} value={duration} onChange={e => setDuration(parseInt(e.target.value || '0', 10))} required />
+					</div>
+					<div className="stack">
+						<label>Natural Language Notes</label>
+						<textarea value={notes} onChange={e => setNotes(e.target.value)} rows={4} />
+					</div>
+					<div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+						<button className="btn-primary" disabled={loading}>{loading ? 'Generating...' : 'Generate Assessment'}</button>
+					</div>
+				</form>
+				{error && <p style={{ color: 'red', marginTop: 12 }}>{error}</p>}
+			</div>
 		</div>
 	);
 } 

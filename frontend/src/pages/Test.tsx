@@ -39,6 +39,7 @@ export default function TestPage() {
 	const [assessment, setAssessment] = useState<any | null>(null);
 	const [answers, setAnswers] = useState<Record<string, any>>({});
 	const [timeLeft, setTimeLeft] = useState<number>(0);
+	const [currentIndex, setCurrentIndex] = useState<number>(0);
 	const [warn, setWarn] = useState<string | null>(null);
 	const [error, setError] = useState<string | null>(null);
 	const [submitting, setSubmitting] = useState(false);
@@ -81,6 +82,15 @@ export default function TestPage() {
 		setAnswers(prev => ({ ...prev, [questionId]: value }));
 	}
 
+	function goNext() {
+		if (!assessment) return;
+		setCurrentIndex(i => Math.min(i + 1, (assessment?.questions?.length || 1) - 1));
+	}
+
+	function goPrev() {
+		setCurrentIndex(i => Math.max(0, i - 1));
+	}
+
 	async function onSubmit() {
 		if (!id) return;
 		setSubmitting(true); setError(null);
@@ -101,43 +111,68 @@ export default function TestPage() {
 		return `${m}:${s}`;
 	}, [timeLeft]);
 
-	if (!assessment) return <div style={{ padding: 24 }}><p>Loading...</p>{error && <p style={{ color: 'red' }}>{error}</p>}</div>;
+	if (!assessment) return <div className="container"><div className="card"><p>Loading...</p>{error && <p style={{ color: 'red' }}>{error}</p>}</div></div>;
+
+	const total = assessment.questions.length;
+	const q = assessment.questions[currentIndex];
 
 	return (
-		<div style={{ padding: 24 }}>
-			<h2>{assessment.role} Test</h2>
-			<p>Time left: <b>{mmss}</b></p>
-			{warn && <p style={{ color: 'orange' }}>{warn}</p>}
-			<ol>
-				{assessment.questions.map((q: any, idx: number) => (
-					<li key={q.questionId} style={{ marginBottom: 16 }}>
-						<p><b>Q{idx + 1} ({q.type})</b>: {q.prompt}</p>
+		<div className="container">
+			<div className="toolbar" style={{ marginBottom: 16 }}>
+				<div>
+					<h2 style={{ fontSize: 22 }}>{assessment.role} Test</h2>
+					<p className="muted">Question {currentIndex + 1} of {total}</p>
+				</div>
+				<div className="card" style={{ padding: '8px 12px' }}>
+					<span className="muted">Time left</span> <b>{mmss}</b>
+				</div>
+			</div>
+
+			{warn && <div className="card" style={{ borderColor: '#f59e0b', background: '#fffbeb', color: '#92400e', marginBottom: 12 }}>Tab switch detected. Please stay on the test page.</div>}
+
+			<div className="card">
+				<div className="grid-2">
+					<div className="question-pane">
+						<p className="muted" style={{ marginBottom: 6 }}>Q{currentIndex + 1} · {q.type}</p>
+						<h3 style={{ fontSize: 18, marginBottom: 8 }}>{q.prompt}</h3>
+					</div>
+					<div className="answer-pane">
 						{q.type === 'mcq' && Array.isArray(q.options) && q.options.length > 0 && (
-							<div>
+							<div className="stack">
 								{q.options.map((opt: string) => (
-									<label key={opt} style={{ display: 'block' }}>
-										<input type="radio" name={q.questionId} value={opt} onChange={e => setAnswer(q.questionId, e.target.value)} /> {opt}
+									<label key={opt} className="option">
+										<input type="radio" name={q.questionId} value={opt} checked={answers[q.questionId] === opt} onChange={e => setAnswer(q.questionId, e.target.value)} />
+										<span>{opt}</span>
 									</label>
 								))}
 							</div>
 						)}
 						{q.type === 'short' && (
-							<input placeholder="Your answer" onChange={e => setAnswer(q.questionId, e.target.value)} />
+							<input type="text" placeholder="Your answer" value={answers[q.questionId] || ''} onChange={e => setAnswer(q.questionId, e.target.value)} />
 						)}
 						{q.type === 'scenario' && (
-							<textarea rows={5} cols={60} placeholder="Your approach" onChange={e => setAnswer(q.questionId, e.target.value)} />
+							<textarea rows={8} placeholder="Your approach" value={answers[q.questionId] || ''} onChange={e => setAnswer(q.questionId, e.target.value)} />
 						)}
 						{q.type === 'coding' && (
-							<div>
-								<p>Starter code (editable):</p>
-								<textarea rows={8} cols={80} defaultValue={q.starterCode || ''} onChange={e => setAnswer(q.questionId, e.target.value)} />
+							<div className="stack">
+								<label>Starter code</label>
+								<textarea className="code-area" rows={12} placeholder="Write your solution here" value={answers[q.questionId] ?? (q.starterCode || '')} onChange={e => setAnswer(q.questionId, e.target.value)} />
 							</div>
 						)}
-					</li>
-				))}
-			</ol>
-			{error && <p style={{ color: 'red' }}>{error}</p>}
-			<button onClick={onSubmit} disabled={submitting}>{submitting ? 'Submitting...' : 'Submit'}</button>
+					</div>
+				</div>
+				<div className="toolbar" style={{ marginTop: 16 }}>
+					<div style={{ display: 'flex', gap: 8 }}>
+						<button onClick={goPrev} disabled={currentIndex === 0}>Previous</button>
+						<button onClick={goNext} disabled={currentIndex === total - 1}>Next</button>
+					</div>
+					<div>
+						<button className="btn-primary" onClick={onSubmit} disabled={submitting}>{submitting ? 'Submitting...' : 'Submit'}</button>
+					</div>
+				</div>
+			</div>
+
+			{error && <p style={{ color: 'red', marginTop: 12 }}>{error}</p>}
 		</div>
 	);
 } 
